@@ -1,13 +1,15 @@
 {
-  "name": "baccarat-super-vip",
-  "version": "10.0.0",
-  "main": "app.js",
+  "name": "xuc-xac-ai-ultimate",
+  "version": "8.0.0",
+  "description": "Hệ thống AI dự đoán xúc xắc ULTIMATE - 15+ thuật toán, hoàn toàn không random",
+  "main": "index.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5"
+    "axios": "^1.6.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
