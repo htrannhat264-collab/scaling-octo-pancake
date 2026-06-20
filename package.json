@@ -1,7 +1,6 @@
 {
   "name": "baccarat-super-vip",
   "version": "10.0.0",
-  "description": "API dự đoán Tài Xỉu SIÊU VIP - 35 cầu - 40 thuật toán - AI Self-Learning",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
