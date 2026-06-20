@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-API Flask dự đoán Tài Xỉu SIÊU VIP - Version 10.0 (AI Self-Learning)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✧ 35 loại cầu | 40 thuật toán | 20 tín hiệu bẻ cầu | Học tự động
-✧ Hỗ trợ 8 game: LC79(TX/MD5), BETVIP(TX/MD5), XENGLIVE(TX/MD5), XOCDIA88(TX/MD5)
-✧ Auto ping mỗi 60s giữ kết nối
-✧ JSON trả về 1 dòng theo format yêu cầu
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-"""
-
 import json
 import math
 import threading
@@ -26,7 +16,6 @@ app = Flask(__name__)
 AUTH_KEY = "apihdx"
 USER_ID = "@tranhoang2286"
 ALGO_NAME = "HOÀNGDZ SIÊU VIP v10.0 (AI)"
-
 
 GAME_CONFIG = {
     "lc79_tx": {
@@ -79,27 +68,23 @@ GAME_CONFIG = {
     }
 }
 
-# ================= CÁC CẤU TRÚC DỮ LIỆU HỖ TRỢ TỰ HỌC =================
+# ================= TỰ HỌC =================
 class SelfLearning:
-    """Lớp quản lý học tự động cho từng thuật toán"""
     def __init__(self, decay=0.95, min_weight=30, max_weight=120):
-        self.weights = defaultdict(lambda: 70)          # trọng số cơ sở
-        self.history = defaultdict(lambda: deque(maxlen=200))  # lưu kết quả dự đoán (đúng/sai)
+        self.weights = defaultdict(lambda: 70)
+        self.history = defaultdict(lambda: deque(maxlen=200))
         self.decay = decay
         self.min_weight = min_weight
         self.max_weight = max_weight
 
     def update(self, algo_name, game_id, correct):
-        """Cập nhật hiệu suất thuật toán, correct=True nếu dự đoán đúng"""
         key = f"{game_id}_{algo_name}"
         self.history[key].append(1 if correct else 0)
-        recent = list(self.history[key])[-50:]  # chỉ xét 50 gần nhất
+        recent = list(self.history[key])[-50:]
         if recent:
             accuracy = sum(recent) / len(recent)
-            # Điều chỉnh trọng số: accuracy càng cao, trọng số càng lớn
             new_weight = 50 + accuracy * 70
             new_weight = max(self.min_weight, min(self.max_weight, new_weight))
-            # Làm mượt với trọng số cũ
             self.weights[key] = self.weights[key] * self.decay + new_weight * (1 - self.decay)
         else:
             self.weights[key] = 70
@@ -108,13 +93,10 @@ class SelfLearning:
         key = f"{game_id}_{algo_name}"
         return self.weights.get(key, 70)
 
-# Khởi tạo bộ học toàn cục
 self_learning = SelfLearning()
-
-# Lưu kết quả thực tế cho việc cập nhật
 actual_history = defaultdict(lambda: deque(maxlen=100))
-# Lưu lại dự đoán vừa đưa ra để sau khi có kết quả thực tế mới cập nhật được
-pending_predictions = defaultdict(lambda: deque(maxlen=100))  # (session_id, algo_name, prediction)
+game_cache = {}
+cache_lock = threading.Lock()
 
 # ================= HÀM TIỆN ÍCH =================
 def fetch_data(url):
@@ -186,7 +168,7 @@ def standard_deviation(data, mean=None):
     variance = sum((x-mean)**2 for x in data)/len(data)
     return math.sqrt(variance)
 
-# ================= CÁC PATTERN DETECTOR MỚI VÀ CŨ (35) =================
+# ================= PATTERN DETECTORS =================
 class UltimatePatternDetector:
     @staticmethod
     def detect_bet(history):
@@ -477,7 +459,6 @@ class UltimatePatternDetector:
             return {'name': "⛓️ Cầu chuỗi bệt dài", 'confidence':75, 'next':last7[-1], 'weight':72}
         return None
 
-    # ================= CÁC PATTERN MỚI (tổng 35) =================
     @staticmethod
     def detect_4_4(history):
         if len(history)>=8 and history[-8:] in ("TTTTXXXX","XXXXTTTT"):
@@ -554,7 +535,7 @@ class UltimatePatternDetector:
             return {'name': "🔁 Chu kỳ 2-2-2-2", 'confidence':78, 'next':'T', 'weight':76}
         return None
 
-# ================= CÁC THUẬT TOÁN MỚI VÀ CŨ (40) =================
+# ================= THUẬT TOÁN =================
 class UltimateAdvancedAlgo:
     @staticmethod
     def markov1(history):
@@ -881,32 +862,23 @@ class UltimateAdvancedAlgo:
         win_rate = pattern_win_rate[current_pattern]['win']/pattern_win_rate[current_pattern]['total']
         return 'T' if win_rate>0.5 else 'X'
 
-    # ================= CÁC THUẬT TOÁN MỚI (tổng 40) =================
     @staticmethod
     def logistic_regression(history, window=15):
-        """Hồi quy logistic đơn giản (tự học)"""
         if len(history) < window: return None
-        # Sử dụng các đặc trưng: tỷ lệ T trong 5,10,15 gần nhất; độ lệch chuẩn
         y = [1 if c == 'T' else 0 for c in history[-window:]]
-        # Tạo đặc trưng: ma5, ma10, std, momentum
         ma5 = moving_average(y, 5) if len(y) >= 5 else 0.5
         ma10 = moving_average(y, 10) if len(y) >= 10 else 0.5
         std = standard_deviation(y)
         mom = y[-1] - y[-2] if len(y) > 1 else 0
-        # Hàm sigmoid
-        z = 0.5*ma5 + 0.3*ma10 - 0.2*std + 0.1*mom - 0.5  # trọng số cố định (có thể học)
+        z = 0.5*ma5 + 0.3*ma10 - 0.2*std + 0.1*mom - 0.5
         prob = 1 / (1 + math.exp(-z))
         return 'T' if prob > 0.5 else 'X'
 
     @staticmethod
     def random_forest_simple(history, n_trees=5):
-        """Mô phỏng random forest với các cây quyết định ngẫu nhiên"""
         if len(history) < 12: return None
         votes = []
         for _ in range(n_trees):
-            # Chọn ngẫu nhiên tập con các đặc trưng
-            indices = [i for i in range(1, 9)]
-            # Cây quyết định đơn giản: so sánh tỷ lệ T trong vài khung
             win = [5, 8, 10, 12]
             sel_win = [w for w in win if len(history) >= w]
             if not sel_win: continue
@@ -923,7 +895,6 @@ class UltimateAdvancedAlgo:
 
     @staticmethod
     def adaboost_style(history):
-        """Mô phỏng AdaBoost với 3 weak learner đơn giản"""
         if len(history) < 8: return None
         weak = [
             lambda h: 'T' if h[-2:].count('T') >= 1 else 'X',
@@ -943,14 +914,11 @@ class UltimateAdvancedAlgo:
 
     @staticmethod
     def lstm_mock(history, window=10):
-        """Mô phỏng LSTM: sử dụng trung bình có trọng số gần nhất"""
         if len(history) < window: return None
         seq = history[-window:]
-        # Mạng nơ-ron giả: chú ý đến 3 phần tử cuối
         last3 = seq[-3:]
         if last3[0] == last3[1] == last3[2]:
             return 'X' if last3[0]=='T' else 'T'
-        # Đếm số lần lặp lại gần đây
         count_same = 0
         for i in range(1, min(6, len(seq))):
             if seq[-i] == seq[-i-1]:
@@ -964,20 +932,18 @@ class UltimateAdvancedAlgo:
 
     @staticmethod
     def transformer_mock(history):
-        """Mô phỏng transformer: tự chú ý đến các vị trí xa"""
         if len(history) < 12: return None
-        # Tính điểm chú ý: so sánh 6 gần nhất với 6 xa hơn
         recent = history[-6:]
         older = history[-12:-6]
         attention = sum(1 for i in range(6) if recent[i] == older[i]) / 6
         if attention > 0.7:
-            return recent[-1]  # xu hướng lặp lại
+            return recent[-1]
         elif attention < 0.3:
-            return 'X' if recent[-1]=='T' else 'T'  # đảo chiều
+            return 'X' if recent[-1]=='T' else 'T'
         else:
             return None
 
-# ================= TÍN HIỆU BẺ CẦU MỚI (20) =================
+# ================= TÍN HIỆU BẺ CẦU =================
 class BreakSignalDetector:
     @staticmethod
     def rsi_break(history):
@@ -1057,46 +1023,34 @@ class BreakSignalDetector:
         chikou = nums[-26] if len(nums)>26 else 0
         current = nums[-1]
         return (current>tenkan and current>kijun and chikou>kijun) or (current<tenkan and current<kijun and chikou<kijun)
-
-    # ================= TÍN HIỆU MỚI =================
     @staticmethod
     def momentum_divergence(history):
         if len(history) < 12: return False
         nums = [1 if c=='T' else 0 for c in history[-12:]]
-        # Động lượng 3 phiên
         mom3 = [nums[i] - nums[i-3] for i in range(3, len(nums))]
-        # Động lượng 6 phiên
         mom6 = [nums[i] - nums[i-6] for i in range(6, len(nums))]
         if len(mom3) >= 2 and len(mom6) >= 2:
             if (mom3[-1] > 0 and mom6[-1] < 0) or (mom3[-1] < 0 and mom6[-1] > 0):
                 return True
         return False
-
     @staticmethod
     def volume_spike(history):
-        # Giả lập volume spike dựa trên tần suất thay đổi kết quả
         if len(history) < 10: return False
         changes = sum(1 for i in range(1, min(10, len(history))) if history[-i] != history[-i-1])
         return changes >= 7
-
     @staticmethod
     def pattern_exhaustion(history):
         if len(history) < 8: return False
         last8 = history[-8:]
-        # Kiểm tra cầu 1-1 dài
         if last8 in ("TXTXTXTX", "XTXTXTXT"):
             return True
-        # Kiểm tra cầu 2-2 dài
         if last8 in ("TTXXTTXX", "XXTTXXTT"):
             return True
         return False
-
     @staticmethod
     def double_top_bottom(history):
         if len(history) < 10: return False
-        # Tìm đỉnh đáy kép
         nums = [1 if c=='T' else 0 for c in history[-10:]]
-        # Tìm 2 đỉnh
         peaks = [i for i in range(1, len(nums)-1) if nums[i] > nums[i-1] and nums[i] > nums[i+1]]
         if len(peaks) >= 2:
             if abs(nums[peaks[0]] - nums[peaks[1]]) < 0.2:
@@ -1106,38 +1060,30 @@ class BreakSignalDetector:
             if abs(nums[troughs[0]] - nums[troughs[1]]) < 0.2:
                 return True
         return False
-
     @staticmethod
     def support_resistance_break(history):
         if len(history) < 15: return False
         nums = [1 if c=='T' else 0 for c in history[-15:]]
         high = max(nums)
         low = min(nums)
-        # Kiểm tra phá vỡ ngưỡng
         if nums[-1] > high - 0.2 and nums[-2] <= high - 0.2:
             return True
         if nums[-1] < low + 0.2 and nums[-2] >= low + 0.2:
             return True
         return False
-
     @staticmethod
     def elliott_wave_break(history):
         if len(history) < 13: return False
-        # Mô phỏng sóng Elliott 5-3
         nums = [1 if c=='T' else 0 for c in history[-13:]]
-        # Kiểm tra xem có 5 sóng tăng giảm không
         diff = [nums[i+1] - nums[i] for i in range(len(nums)-1)]
-        # Đếm số lần đổi dấu
         sign_changes = sum(1 for i in range(1, len(diff)) if diff[i] * diff[i-1] < 0)
         if sign_changes >= 3:
             return True
         return False
-
     @staticmethod
     def gann_break(history):
         if len(history) < 12: return False
         nums = [1 if c=='T' else 0 for c in history[-12:]]
-        # Góc 45 độ: kiểm tra xem có đang tăng đều không
         increasing = all(nums[i] <= nums[i+1] for i in range(len(nums)-1))
         if increasing and (nums[-1] - nums[0]) / 11 > 0.05:
             return True
@@ -1146,14 +1092,13 @@ class BreakSignalDetector:
             return True
         return False
 
-# ================= QUYẾT ĐỊNH SIÊU VIP VỚI TỰ HỌC =================
+# ================= QUYẾT ĐỊNH SIÊU VIP =================
 class SuperVipDecision:
     def __init__(self, history, totals, game_id):
         self.history = history
         self.totals = totals
         self.game_id = game_id
         self.break_signals = 0
-        # Danh sách các pattern detectors (35)
         self.detectors = [
             UltimatePatternDetector.detect_bet,
             UltimatePatternDetector.detect_1_1,
@@ -1180,7 +1125,6 @@ class SuperVipDecision:
             lambda h: UltimatePatternDetector.detect_even_odd(h, totals),
             lambda h: UltimatePatternDetector.detect_total_bet(h, totals),
             UltimatePatternDetector.detect_chain,
-            # Các pattern mới
             UltimatePatternDetector.detect_4_4,
             UltimatePatternDetector.detect_5_5,
             UltimatePatternDetector.detect_zigzag,
@@ -1191,7 +1135,6 @@ class SuperVipDecision:
             UltimatePatternDetector.detect_alternating_short,
             UltimatePatternDetector.detect_four_cycle,
         ]
-        # Danh sách các thuật toán (40)
         self.algos = [
             ('Markov1', UltimateAdvancedAlgo.markov1),
             ('Markov2', UltimateAdvancedAlgo.markov2),
@@ -1220,14 +1163,12 @@ class SuperVipDecision:
             ('DecisionTree', UltimateAdvancedAlgo.decision_tree),
             ('Ensemble', UltimateAdvancedAlgo.ensemble_voting),
             ('RL', lambda h: UltimateAdvancedAlgo.reinforcement_learning(h, game_id)),
-            # Các thuật toán mới
             ('Logistic', UltimateAdvancedAlgo.logistic_regression),
             ('RandomForest', UltimateAdvancedAlgo.random_forest_simple),
             ('AdaBoost', UltimateAdvancedAlgo.adaboost_style),
             ('LSTM', UltimateAdvancedAlgo.lstm_mock),
             ('Transformer', UltimateAdvancedAlgo.transformer_mock),
         ]
-        # Danh sách các tín hiệu bẻ cầu (20)
         self.break_detectors = [
             BreakSignalDetector.rsi_break,
             BreakSignalDetector.bollinger_break,
@@ -1261,8 +1202,7 @@ class SuperVipDecision:
         break_count = self.check_break_signals()
         should_break = break_count >= 3
 
-        votes = []  # (name, prediction, weight, is_algo)
-        # Lấy votes từ pattern detectors
+        votes = []
         for det in self.detectors:
             try:
                 res = det(self.history)
@@ -1270,12 +1210,10 @@ class SuperVipDecision:
                     votes.append((res['name'], res['next'], res.get('weight', res['confidence']), False))
             except:
                 pass
-        # Lấy votes từ thuật toán
         for name, func in self.algos:
             try:
                 pred = func(self.history)
                 if pred:
-                    # Lấy trọng số từ bộ tự học
                     base_weight = self_learning.get_weight(name, self.game_id)
                     if should_break and pred != self.history[-1]:
                         base_weight += 10
@@ -1288,11 +1226,9 @@ class SuperVipDecision:
             fb = 'T' if last5.count('T') >= last5.count('X') else 'X'
             return fb, 50, "Fallback", {}
 
-        # Tính tổng trọng số cho T và X
         wT = sum(w for _,p,w,_ in votes if p=='T')
         wX = sum(w for _,p,w,_ in votes if p=='X')
 
-        # Xử lý bẻ cầu
         if should_break:
             if wT > wX:
                 final = 'X'
@@ -1308,22 +1244,14 @@ class SuperVipDecision:
         conf = round(max(wT,wX)/total*100) if total>0 else 50
         conf = min(99, conf+conf_boost)
 
-        # Tìm pattern tốt nhất
         best_pat = max([v for v in votes if not v[3]], key=lambda x:x[2], default=None)
         pattern = best_pat[0] if best_pat else "Không xác định"
         if should_break:
             pattern = f"🔥 BẺ CẦU ({break_count} tín hiệu) - {pattern}"
 
-        # Lưu lại dự đoán của các thuật toán để sau này cập nhật tự học
-        # (sẽ được cập nhật khi có kết quả thực tế ở endpoint)
-        # Để đơn giản, ở đây ta không lưu vì cần session_id; việc cập nhật sẽ được xử lý trong endpoint.
-
         return final, conf, pattern, {}
 
-# ================= AUTO PING BACKGROUND =================
-game_cache = {}
-cache_lock = threading.Lock()
-
+# ================= AUTO PING =================
 def ping_all_apis():
     while True:
         for game_id in GAME_CONFIG:
@@ -1359,16 +1287,7 @@ def create_endpoint(game_id):
             current_item = data[0] if data else {}
         result, point, dices, session_id = parse_session(current_item, config['type'])
 
-        # Cập nhật lịch sử thực tế và tự học nếu có kết quả
         if result:
-            # Lấy kết quả thực tế của phiên trước (nếu có) để cập nhật tự học
-            # Ở đây ta có thể lấy phiên trước từ history[-2] nếu có
-            if len(actual_history[game_id]) > 0:
-                prev_result = actual_history[game_id][-1]
-                # Cập nhật các thuật toán đã dự đoán ở phiên trước
-                # (để đơn giản, bỏ qua vì cần lưu nhiều thông tin)
-                # Thay vào đó, ta sẽ cập nhật dựa trên lịch sử đã có
-                pass
             actual_history[game_id].append(result)
 
         dec = SuperVipDecision(history, totals, game_id)
@@ -1384,7 +1303,7 @@ def create_endpoint(game_id):
             "phien_hien_tai": (session_id + 1) if session_id else "?",
             "du_doan": "Tài" if pred == "T" else "Xỉu",
             "do_tin_cay": f"{tai_percent}%-{xiu_percent}%",
-            "id": USER_ID,
+            "id": @tranhoang2286,
             "ai_model": ALGO_NAME,
             "self_learning": "Active"
         }
