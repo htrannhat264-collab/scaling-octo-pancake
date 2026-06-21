@@ -1,14 +1,14 @@
 {
   "name": "xuc-xac-ai-ultimate-pro",
-  "version": "9.0.0",
-  "description": "Hệ thống AI ULTIMATE PRO - 14+ thuật toán đa luồng, cực mạnh, không random",
+  "version": "11.0.0",
+  "description": "AI phân tích xúc xắc ULTIMATE PRO - 12+ thuật toán cực mạnh",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "axios": "^1.6.2"
+    "axios": "^1.6.2",
+    "express": "^4.18.2"
   },
   "engines": {
     "node": ">=16.0.0"
