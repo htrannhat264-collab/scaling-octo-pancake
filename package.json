@@ -1,10 +1,11 @@
 {
-  "name": "xuc-xac-ai-ultimate",
-  "version": "8.0.0",
-  "description": "Hệ thống AI dự đoán xúc xắc ULTIMATE - 15+ thuật toán, hoàn toàn không random",
+  "name": "xuc-xac-ai-ultimate-pro",
+  "version": "9.0.0",
+  "description": "Hệ thống AI ULTIMATE PRO - 14+ thuật toán đa luồng, cực mạnh, không random",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "axios": "^1.6.2"
