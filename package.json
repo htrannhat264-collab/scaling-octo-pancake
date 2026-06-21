@@ -1,7 +1,7 @@
 {
-  "name": "xuc-xac-ai-ultimate-pro",
-  "version": "11.0.0",
-  "description": "AI phân tích xúc xắc ULTIMATE PRO - 12+ thuật toán cực mạnh",
+  "name": "xuc-xac-ai-multi-game",
+  "version": "12.0.0",
+  "description": "AI phân tích xúc xắc đa game - 12+ thuật toán cực mạnh",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
